@@ -1,6 +1,8 @@
 package com.infinity.commerce.auth_service.redis;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
@@ -14,7 +16,8 @@ public class RedisCacheManager {
     @Autowired
     private RedisTemplate<String , Object> redisTemplate;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+    //serialization of localdatetime
     /**
      * Generic method to get data from redis or fetch from DB if not present
      * @param key redis key
@@ -50,6 +53,8 @@ public class RedisCacheManager {
     private <T> T deserialize(String value) {
         try {
             return (T) objectMapper.readValue(value, Object.class);
+            //abstract class --> TypeReference
+//            return (T) objectMapper.convertValue((T) objectMapper.readValue(value, Object.class), new TypeReference<T>() {});
         } catch (Exception e) {
             throw new RuntimeException("Failed to deserialize data", e);
         }

@@ -1,5 +1,8 @@
 package com.infinity.commerce.auth_service.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.infinity.commerce.auth_service.entity.User;
 import com.infinity.commerce.auth_service.entity.UserRole;
 import com.infinity.commerce.auth_service.enums.Role;
@@ -33,6 +36,7 @@ public class UserService {
     @Autowired
     RedisCacheManager redisCacheManager;
 
+    private ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
     @Transactional
     public User register(User user) {
         if(userRepository.findByUsername(user.getUsername()) != null){
@@ -54,7 +58,6 @@ public class UserService {
     public String loginUser(User user) throws Exception{
         //check if username exists in user table
         User loggedUser=userRepository.findByUsername(user.getUsername());
-
         if(loggedUser==null){
             throw new Exception("Username does not exist in user table.");
         }
@@ -73,9 +76,12 @@ public class UserService {
 
     public List<Role> findRoleByUserId(Long id ) throws RuntimeException{
         //username have to exist
-        List<UserRole> userRoleList = redisCacheManager.get("user_roles:" + id, 600L,
+
+
+        List<UserRole> userRoleList = objectMapper.convertValue(redisCacheManager.get("user_roles:" + id, 600L,
                 () -> userRoleRepository.findByUserId(id)
-        );
+        ), new TypeReference<List<UserRole>>() {});
+
         //username does not exist in user_role
         if(userRoleList==null || userRoleList.isEmpty()){
             throw new RuntimeException("User does not exist in UserRole for id = "+id);
